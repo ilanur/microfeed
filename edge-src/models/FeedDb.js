@@ -1,9 +1,13 @@
-import {randomShortUUID} from "../../common-src/StringUtils";
+import { randomShortUUID } from "../../common-src/StringUtils";
 import {
-  STATUSES, PREDEFINED_SUBSCRIBE_METHODS,
-  SETTINGS_CATEGORIES, DEFAULT_ITEMS_PER_PAGE, ITEMS_SORT_ORDERS, MAX_ITEMS_PER_PAGE,
-} from '../../common-src/Constants';
-import {msToRFC3339, rfc3399ToMs} from "../../common-src/TimeUtils";
+  STATUSES,
+  PREDEFINED_SUBSCRIBE_METHODS,
+  SETTINGS_CATEGORIES,
+  DEFAULT_ITEMS_PER_PAGE,
+  ITEMS_SORT_ORDERS,
+  MAX_ITEMS_PER_PAGE,
+} from "../../common-src/Constants";
+import { msToRFC3339, rfc3399ToMs } from "../../common-src/TimeUtils";
 import FeedPublicJsonBuilder from "./FeedPublicJsonBuilder";
 
 /**
@@ -23,10 +27,10 @@ export function getFetchItemsParams(request, queryKwargs = {}, limit = null) {
     limit,
   };
 
-  const { searchParams } = new URL(request.url)
-  const nextCursor = searchParams.get('next_cursor');
-  const prevCursor = searchParams.get('prev_cursor');
-  const sortOrder = searchParams.get('sort');
+  const { searchParams } = new URL(request.url);
+  const nextCursor = searchParams.get("next_cursor");
+  const prevCursor = searchParams.get("prev_cursor");
+  const sortOrder = searchParams.get("sort");
   if (sortOrder) {
     fetchItems.fromUrl.sortOrder = sortOrder;
   }
@@ -66,7 +70,7 @@ function getItemJson(itemObj) {
     id: itemObj.id,
     status: itemObj.status,
     pubDateMs: rfc3399ToMs(itemObj.pub_date),
-    ...JSON.parse(itemObj.data)
+    ...JSON.parse(itemObj.data),
   };
 }
 
@@ -86,49 +90,53 @@ export default class FeedDb {
    */
   getInsertSql(table, keyValuePairs) {
     let sql = `INSERT INTO ${table}`;
-    const colList = Object.keys(keyValuePairs)
+    const colList = Object.keys(keyValuePairs);
     const bindList = Object.values(keyValuePairs);
-    const placeholderList = bindList.map(() => '?');
-    sql = `${sql} (${colList.join(', ')}) VALUES (${placeholderList.join(', ')})`;
-    return this.FEED_DB.prepare(sql).bind(...bindList)
+    const placeholderList = bindList.map(() => "?");
+    sql = `${sql} (${colList.join(", ")}) VALUES (${placeholderList.join(
+      ", "
+    )})`;
+    return this.FEED_DB.prepare(sql).bind(...bindList);
   }
 
   getUpdateSql(table, queryKwargs, keyValuePairs) {
     let sql = `UPDATE ${table} SET`;
-    const setList = ['updated_at = ?'];
-    const bindList = [(new Date()).toISOString()];
+    const setList = ["updated_at = ?"];
+    const bindList = [new Date().toISOString()];
     Object.keys(keyValuePairs).forEach((key) => {
       setList.push(`${key} = ?`);
       bindList.push(keyValuePairs[key]);
     });
-    sql = `${sql} ${setList.join(', ')}`;
+    sql = `${sql} ${setList.join(", ")}`;
     if (queryKwargs && Object.keys(queryKwargs).length > 0) {
       const queryKeys = [];
       Object.keys(queryKwargs).forEach((queryKey) => {
         queryKeys.push(`${queryKey}=?`);
         bindList.push(queryKwargs[queryKey]);
-      })
-      sql = `${sql} WHERE ${queryKeys.join(' AND ')}`;
+      });
+      sql = `${sql} WHERE ${queryKeys.join(" AND ")}`;
     }
-    return this.FEED_DB.prepare(sql).bind(...bindList)
+    return this.FEED_DB.prepare(sql).bind(...bindList);
   }
 
   getUpsertSql(table, primaryKey, queryKwargs, keyValuePairs) {
-    let updateSql = 'UPDATE SET';
-    const setList = ['updated_at = ?'];
-    const updateBindList = [(new Date()).toISOString()];
+    let updateSql = "UPDATE SET";
+    const setList = ["updated_at = ?"];
+    const updateBindList = [new Date().toISOString()];
     Object.keys(keyValuePairs).forEach((key) => {
       setList.push(`${key} = ?`);
       updateBindList.push(keyValuePairs[key]);
     });
-    updateSql = `${updateSql} ${setList.join(', ')}`;
+    updateSql = `${updateSql} ${setList.join(", ")}`;
 
     let insertSql = `INSERT INTO ${table}`;
-    const insertKeyValuePairs = {...queryKwargs, ...keyValuePairs};
-    const colList = Object.keys(insertKeyValuePairs)
+    const insertKeyValuePairs = { ...queryKwargs, ...keyValuePairs };
+    const colList = Object.keys(insertKeyValuePairs);
     const insertBindList = Object.values(insertKeyValuePairs);
-    const placeholderList = insertBindList.map(() => '?');
-    insertSql = `${insertSql} (${colList.join(', ')}) VALUES (${placeholderList.join(', ')})`;
+    const placeholderList = insertBindList.map(() => "?");
+    insertSql = `${insertSql} (${colList.join(
+      ", "
+    )}) VALUES (${placeholderList.join(", ")})`;
 
     const sql = `${insertSql} ON CONFLICT(${primaryKey}) DO ${updateSql}`;
     return this.FEED_DB.prepare(sql).bind(...insertBindList, ...updateBindList);
@@ -138,51 +146,63 @@ export default class FeedDb {
     const settings = {
       [SETTINGS_CATEGORIES.SUBSCRIBE_METHODS]: {
         methods: [
-          {...PREDEFINED_SUBSCRIBE_METHODS.rss, id: randomShortUUID(), editable: false, enabled: true},
-          {...PREDEFINED_SUBSCRIBE_METHODS.json, id: randomShortUUID(), editable: false, enabled: true},
+          {
+            ...PREDEFINED_SUBSCRIBE_METHODS.rss,
+            id: randomShortUUID(),
+            editable: false,
+            enabled: true,
+          },
+          {
+            ...PREDEFINED_SUBSCRIBE_METHODS.json,
+            id: randomShortUUID(),
+            editable: false,
+            enabled: true,
+          },
         ],
       },
       [SETTINGS_CATEGORIES.WEB_GLOBAL_SETTINGS]: {
         favicon: {
-          'url': '/assets/default/favicon.png',
-          'contentType': 'image/png',
+          url: "/assets/default/favicon.png",
+          contentType: "image/png",
         },
-        'itemsSortOrder': ITEMS_SORT_ORDERS.NEWEST_FIRST,
-        'itemsPerPage': DEFAULT_ITEMS_PER_PAGE,
+        itemsSortOrder: ITEMS_SORT_ORDERS.NEWEST_FIRST,
+        itemsPerPage: DEFAULT_ITEMS_PER_PAGE,
       },
       [SETTINGS_CATEGORIES.ACCESS]: {
-        currentPolicy: 'public',
+        currentPolicy: "public",
       },
       [SETTINGS_CATEGORIES.ANALYTICS]: {},
       [SETTINGS_CATEGORIES.CUSTOM_CODE]: {},
     };
     const channel = {
-      image: '/assets/default/channel-image.png',
+      image: "/assets/default/channel-image.png",
       link: this.baseUrl,
-      language: 'en-us',
+      language: "en-us",
       categories: [],
-      'itunes:explicit': false,
-      'itunes:type': 'episodic',
-      'itunes:complete': false,
-      'itunes:block': false,
-      'copyright': `©${(new Date()).getFullYear()}`,
+      "itunes:explicit": false,
+      "itunes:type": "episodic",
+      "itunes:complete": false,
+      "itunes:block": false,
+      copyright: `©${new Date().getFullYear()}`,
     };
 
     const batchStatements = [
-      this.getInsertSql('channels', {
-        'id': randomShortUUID(),
-        'status': STATUSES.PUBLISHED,
-        'is_primary': 1,
-        'data': JSON.stringify(channel),
+      this.getInsertSql("channels", {
+        id: randomShortUUID(),
+        status: STATUSES.PUBLISHED,
+        is_primary: 1,
+        data: JSON.stringify(channel),
       }),
     ];
 
     Object.keys(settings).forEach((s) => {
-      batchStatements.push(this.getInsertSql('settings', {
-        'category': s,
-        'data': JSON.stringify(settings[s]),
-      }));
-    })
+      batchStatements.push(
+        this.getInsertSql("settings", {
+          category: s,
+          data: JSON.stringify(settings[s]),
+        })
+      );
+    });
 
     await this.FEED_DB.batch(batchStatements);
 
@@ -220,72 +240,78 @@ export default class FeedDb {
       const bindList = [];
       if (thing.queryKwargs) {
         Object.keys(thing.queryKwargs).forEach((kwargKey) => {
-          const kwargKeyComponents = kwargKey.split('__');
+          const kwargKeyComponents = kwargKey.split("__");
           let key = kwargKeyComponents[0];
-          let op = '==';
-          if (kwargKeyComponents.length > 0 &&
-            ['!=', '>', '<', '>=', '<=', '==', 'in'].includes(kwargKeyComponents[1])) {
+          let op = "==";
+          if (
+            kwargKeyComponents.length > 0 &&
+            ["!=", ">", "<", ">=", "<=", "==", "in"].includes(
+              kwargKeyComponents[1]
+            )
+          ) {
             op = kwargKeyComponents[1];
           }
-          if (op === 'in') {
-            whereList.push(`${key} ${op} (${thing.queryKwargs[kwargKey].join(',')})`);
+          if (op === "in") {
+            whereList.push(
+              `${key} ${op} (${thing.queryKwargs[kwargKey].join(",")})`
+            );
           } else {
             bindList.push(thing.queryKwargs[kwargKey]);
             whereList.push(`${key} ${op} ?`);
           }
-        })
+        });
       }
       if (whereList.length > 0) {
-        sql = `${sql} WHERE ${whereList.join(' AND ')}`;
+        sql = `${sql} WHERE ${whereList.join(" AND ")}`;
       }
       if (thing.orderBy && thing.orderBy.length > 0) {
-        sql = `${sql} ORDER BY ${thing.orderBy.join(',')}`
+        sql = `${sql} ORDER BY ${thing.orderBy.join(",")}`;
       }
       if (thing.limit) {
         sql = `${sql} LIMIT ${thing.limit}`;
       }
-      batchStatements.push(
-        this.FEED_DB.prepare(sql).bind(...bindList)
-      );
+      batchStatements.push(this.FEED_DB.prepare(sql).bind(...bindList));
     });
     const responses = await this.FEED_DB.batch(batchStatements);
     const contentJson = {};
     for (let i = 0; i < things.length; i++) {
       const response = responses[i];
       const thing = things[i];
-      if (thing.table === 'settings') {
+      if (thing.table === "settings") {
         contentJson.settings = {};
         response.results.forEach((result) => {
-          contentJson['settings'][result.category] = getSettingJson(result);
+          contentJson["settings"][result.category] = getSettingJson(result);
         });
-      } else if (thing.table === 'channels') {
+      } else if (thing.table === "channels") {
         contentJson.channel = {};
         response.results.forEach((result) => {
           if (result.is_primary) {
-            contentJson['channel'] = getChannelJson(result);
+            contentJson["channel"] = getChannelJson(result);
           }
         });
-      } else if (thing.table === 'items') {
+      } else if (thing.table === "items") {
         let nextCursor;
         let prevCursor;
-        contentJson['items'] = response.results.map((result) => getItemJson(result));
+        contentJson["items"] = response.results.map((result) =>
+          getItemJson(result)
+        );
         if (sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST) {
-          contentJson['items'].sort((a, b) => (b.pubDateMs - a.pubDateMs));
+          contentJson["items"].sort((a, b) => b.pubDateMs - a.pubDateMs);
         } else {
-          contentJson['items'].sort((a, b) => (a.pubDateMs - b.pubDateMs));
+          contentJson["items"].sort((a, b) => a.pubDateMs - b.pubDateMs);
         }
-        contentJson['items'].forEach((itemJson) => {
+        contentJson["items"].forEach((itemJson) => {
           nextCursor = itemJson.pubDateMs;
           if (!prevCursor) {
             prevCursor = itemJson.pubDateMs;
           }
         });
 
-        if (thing.limit <= contentJson['items'].length) {
-          contentJson['items_next_cursor'] = nextCursor;
+        if (thing.limit <= contentJson["items"].length) {
+          contentJson["items_next_cursor"] = nextCursor;
         }
         if (fromUrl.nextCursor || fromUrl.prevCursor) {
-          contentJson['items_prev_cursor'] = prevCursor;
+          contentJson["items_prev_cursor"] = prevCursor;
         }
       }
     }
@@ -295,21 +321,25 @@ export default class FeedDb {
   async getContent(fetchItems = null) {
     let things = [
       {
-        table: 'channels',
+        table: "channels",
         queryKwargs: {
           status: STATUSES.PUBLISHED,
           is_primary: 1,
         },
       },
       {
-        table: 'settings',
+        table: "settings",
       },
     ];
 
     let contentJson = await this._getContent(things);
-    if (Object.keys(contentJson).length === 0 || !contentJson.channel ||
-      Object.keys(contentJson.channel).length === 0 || !contentJson.settings ||
-      Object.keys(contentJson.settings).length === 0) {
+    if (
+      Object.keys(contentJson).length === 0 ||
+      !contentJson.channel ||
+      Object.keys(contentJson.channel).length === 0 ||
+      !contentJson.settings ||
+      Object.keys(contentJson.settings).length === 0
+    ) {
       contentJson = await this.initDb();
     }
 
@@ -319,21 +349,35 @@ export default class FeedDb {
 
       const fromUrl = fetchItems.fromUrl || {};
       const queryKwargs = fetchItems.queryKwargs || {};
-      const sortOrder = fromUrl.sortOrder || webGlobalSettings.itemsSortOrder || ITEMS_SORT_ORDERS.NEWEST_FIRST;
-      const {nextCursor, prevCursor} = fromUrl;
+      const sortOrder =
+        fromUrl.sortOrder ||
+        webGlobalSettings.itemsSortOrder ||
+        ITEMS_SORT_ORDERS.NEWEST_FIRST;
+      const { nextCursor, prevCursor } = fromUrl;
 
-      let orderBy = sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST ?
-        ['pub_date desc', 'id'] : ['pub_date', 'id'];
+      let orderBy =
+        sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST
+          ? ["pub_date desc", "id"]
+          : ["pub_date", "id"];
       if (nextCursor) {
-        const queryParam = sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST ? 'pub_date__<' : 'pub_date__>';
+        const queryParam =
+          sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST
+            ? "pub_date__<"
+            : "pub_date__>";
         try {
           queryKwargs[queryParam] = msToRFC3339(nextCursor);
         } catch (error) {
           console.log(error);
         }
       } else if (prevCursor) {
-        orderBy = sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST ? ['pub_date', 'id'] : ['pub_date desc', 'id'];
-        const queryParam = sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST ? 'pub_date__>' : 'pub_date__<';
+        orderBy =
+          sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST
+            ? ["pub_date", "id"]
+            : ["pub_date desc", "id"];
+        const queryParam =
+          sortOrder === ITEMS_SORT_ORDERS.NEWEST_FIRST
+            ? "pub_date__>"
+            : "pub_date__<";
         try {
           queryKwargs[queryParam] = msToRFC3339(prevCursor);
         } catch (error) {
@@ -341,7 +385,10 @@ export default class FeedDb {
         }
       }
       const fetchItemsParams = {
-        limit: fetchItems.limit || webGlobalSettings.itemsPerPage || DEFAULT_ITEMS_PER_PAGE,
+        limit:
+          fetchItems.limit ||
+          webGlobalSettings.itemsPerPage ||
+          DEFAULT_ITEMS_PER_PAGE,
         orderBy,
         queryKwargs,
       };
@@ -351,31 +398,35 @@ export default class FeedDb {
       } else if (fetchItemsParams.limit > MAX_ITEMS_PER_PAGE) {
         fetchItemsParams.limit = MAX_ITEMS_PER_PAGE;
       }
-      things = [{
-        table: 'items',
-        ...fetchItemsParams,
-      }];
+      things = [
+        {
+          table: "items",
+          ...fetchItemsParams,
+        },
+      ];
       itemJson = await this._getContent(things, sortOrder, fromUrl);
-      itemJson['items_sort_order'] = sortOrder;
+      itemJson["items_sort_order"] = sortOrder;
     }
 
-    return {...contentJson, ...itemJson};
+    return { ...contentJson, ...itemJson };
   }
 
   async _putChannelToContent(channel) {
-    const {id, status, is_primary, ...data} = channel;
+    const { id, status, is_primary, ...data } = channel;
     const batchStatements = [];
-    batchStatements.push(this.getUpdateSql(
-      'channels',
-      {
-        id,
-      },
-      {
-        status,
-        'is_primary': is_primary,
-        data: JSON.stringify(data),
-      },
-    ));
+    batchStatements.push(
+      this.getUpdateSql(
+        "channels",
+        {
+          id,
+        },
+        {
+          status,
+          is_primary: is_primary,
+          data: JSON.stringify(data),
+        }
+      )
+    );
     await this.FEED_DB.batch(batchStatements);
   }
 
@@ -383,16 +434,17 @@ export default class FeedDb {
     let res;
     try {
       res = await this.getUpsertSql(
-        'settings',
-        'category',
-        {category},
+        "settings",
+        "category",
+        { category },
         {
           data: JSON.stringify(settings[category]),
-        }).run();
+        }
+      ).run();
     } catch (error) {
-      console.log('Failed to upsert', error);
+      console.log("Failed to upsert", error);
     }
-    console.log('Done', res);
+    console.log("Done", res);
   }
 
   async _putSettingsToContent(settings) {
@@ -402,24 +454,28 @@ export default class FeedDb {
   }
 
   async _putItemToContent(item) {
-    const {id, pubDateMs, status, ...data} = item;
+    const { id, pubDateMs, status, ...data } = item;
     const keyValuePairs = {
       status,
-      'pub_date': msToRFC3339(pubDateMs),
+      pub_date: msToRFC3339(pubDateMs),
       data: JSON.stringify(data),
     };
     let res;
     try {
       res = await this.getUpsertSql(
-        'items', 'id', {id}, {...keyValuePairs}).run();
+        "items",
+        "id",
+        { id },
+        { ...keyValuePairs }
+      ).run();
     } catch (error) {
-      console.log('Failed to upsert', error);
+      console.log("Failed to upsert", error);
     }
-    console.log('Done!', res);
+    console.log("Done!", res);
   }
 
   async putContent(feed) {
-    const {channel, settings, item} = feed;
+    const { channel, settings, item, blogPost } = feed;
     if (channel) {
       await this._putChannelToContent(channel);
     }
@@ -431,13 +487,41 @@ export default class FeedDb {
     if (item) {
       await this._putItemToContent(item);
     }
+
+    if (blogPost) {
+      await this._putBlogPostToContent(blogPost);
+    }
   }
 
-  async getPublicJsonData(content=null, forOneItem=false) {
+  async _putBlogPostToContent(blogPost) {
+    const { id, ...data } = blogPost;
+    const keyValuePairs = {
+      data: JSON.stringify(data),
+    };
+    let res;
+    try {
+      res = await this.getUpsertSql(
+        "blog_posts",
+        "id",
+        { id },
+        { ...keyValuePairs }
+      ).run();
+    } catch (error) {
+      console.log("Failed to upsert blog post", error);
+    }
+    console.log("Done!", res);
+  }
+
+  async getPublicJsonData(content = null, forOneItem = false) {
     if (!content) {
       content = await this.getContent();
     }
-    const builder = new FeedPublicJsonBuilder(content, this.baseUrl, this.request, forOneItem);
+    const builder = new FeedPublicJsonBuilder(
+      content,
+      this.baseUrl,
+      this.request,
+      forOneItem
+    );
     return builder.getJsonData();
   }
 }
